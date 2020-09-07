@@ -1,0 +1,12 @@
+{
+    "name": "extype",
+    "url": "https://github.com/DenkiYagi/haxe-extype",
+    "license": "Apache",
+    "tags": ["haxe", "test", "mock"],
+    "description": "Mocking library for Haxe",
+    "version": "0.0.1",
+    "classPath": "src/",
+    "releasenote": "",
+    "contributors": ["denkiyagi"],
+    "dependencies": {}
+}
