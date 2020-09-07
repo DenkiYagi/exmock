@@ -1,6 +1,6 @@
 {
-    "name": "extype",
-    "url": "https://github.com/DenkiYagi/haxe-extype",
+    "name": "exmock",
+    "url": "https://github.com/DenkiYagi/haxe-exmock",
     "license": "Apache",
     "tags": ["haxe", "test", "mock"],
     "description": "Mocking library for Haxe",
