@@ -1,0 +1,14 @@
+-p src
+-p test
+-L buddy
+-L hxnodejs
+-m Main
+--js bin/main.js
+--dce no
+--no-opt
+#-D analyzer-optimize
+-D buddy-colors
+
+--next
+--cwd bin
+--cmd node main.js
