@@ -13,13 +13,18 @@ haxelib install https://github.com/DenkiYagi/exmock.git
 ## usage
 
 ```haxe
-ExMock.mock(YourInterface).setup({
-    toString: () -> "Hello World"
+final mock = ExMock.mock(YourInterface).setup({
+    sayHello: name -> "Hello " + name;
 });
+
+mock.object.sayHello("Taro");
+mock.object.doSomething(); //thrown "not implemented"
+
+mock.calls.sayHello; // [{name:"Taro"}]
 ```
 
 ```haxe
 interface YourInterface {
-    function toString():String;
+    function sayHello(name:String):String;
     function doSomething():Void;
 }
