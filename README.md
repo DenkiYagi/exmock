@@ -7,7 +7,7 @@ mocking library for Haxe
 ## install
 
 ```
-haxelib install https://github.com/DenkiYagi/exmock.git
+haxelib install https://github.com/DenkiYagi/haxe-exmock.git
 ```
 
 ## usage
