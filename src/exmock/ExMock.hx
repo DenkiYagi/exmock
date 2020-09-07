@@ -1,7 +1,5 @@
 package exmock;
 
-import haxe.macro.Expr.ComplexType;
-import haxe.macro.ComplexTypeTools;
 #if macro
 import haxe.macro.ExprTools;
 import haxe.macro.Type;
@@ -15,7 +13,7 @@ using Lambda;
 
 class ExMock {
     #if macro
-    static var counter:Int = 0;
+    @:persistent static var counter:Int = 0;
     #end
 
     public static macro function mock<T>(expr:ExprOf<Class<T>>):Expr {
@@ -303,7 +301,9 @@ class ExMockObject<TType, TCalls> {
     }
 }
 
+#if macro
 private enum Accessor {
     Getter(name:String, type:ComplexType);
     Setter(name:String, type:ComplexType);
 }
+#end
