@@ -2,7 +2,7 @@
 
 mocking library for Haxe
 
-**WORKING IN PROGRESS**
+**WORK IN PROGRESS**
 
 ## install
 
