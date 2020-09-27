@@ -39,7 +39,7 @@ class ExMock {
         final mockBodyType = makeMockBodyType(fields, missingAccessors);
         final mockCallsType = makeMockCallsType(methods, missingAccessors);
 
-        final mockCallsInitExpr = macro (${{
+        final mockCallsInitExpr = macro () -> (${{
             expr: EObjectDecl(methods.map(f -> ({field: f.name, expr: macro []} : ObjectField))),
             pos: Context.currentPos()
         }} : $mockCallsType);
@@ -65,9 +65,9 @@ class ExMock {
                     pos: Context.currentPos()
                 },
                 {
-                    name: "__calls",
+                    name: "__callsHolder",
                     access: [APrivate],
-                    kind: FVar(mockCallsType),
+                    kind: FVar(macro :exmock.ExMock.ExMockCallsHolder<$mockCallsType>),
                     pos: Context.currentPos()
                 },
                 {
@@ -76,12 +76,12 @@ class ExMock {
                     kind: FieldType.FFun({
                         args: [
                             {name: "body", type: macro :Null<$mockBodyType>},
-                            {name: "calls", type: mockCallsType}
+                            {name: "callsHolder", type: macro :exmock.ExMock.ExMockCallsHolder<$mockCallsType>}
                         ],
                         ret: null,
                         expr: macro {
                             this.__body = body;
-                            this.__calls = calls;
+                            this.__callsHolder = callsHolder;
                             $propsInitExpr;
                         }
                     }),
@@ -123,7 +123,7 @@ class ExMock {
                                 // ?meta:Metadata;
                             } : TypeParamDecl)),
                             expr: macro {
-                                ${{expr: EField(macro __calls, f.name), pos: Context.currentPos()}}.push(${eargs});
+                                ${{expr: EField(macro __callsHolder.calls, f.name), pos: Context.currentPos()}}.push(${eargs});
                                 return if (__body != null && ${ebody} != null) {
                                     ${ecall};
                                 } else {
@@ -164,14 +164,14 @@ class ExMock {
         final tp:TypePath = {pack: mockPack, name: mockClass};
         return macro {
             setup: (?body:$mockBodyType) -> {
-                final calls = $mockCallsInitExpr;
+                final callsHolder = new exmock.ExMock.ExMockCallsHolder($mockCallsInitExpr);
                 new exmock.ExMock.ExMockObject(${{
                     expr: EParenthesis({
-                        expr: ECheckType(macro new $tp(body, calls), targetType.toComplexType()),
+                        expr: ECheckType(macro new $tp(body, callsHolder), targetType.toComplexType()),
                         pos: Context.currentPos()
                     }),
                     pos: Context.currentPos()
-                }}, calls);
+                }}, callsHolder);
             }
         };
     }
@@ -316,12 +316,35 @@ class ExMock {
 }
 
 class ExMockObject<TType, TCalls> {
+    final callsHolder:ExMockCallsHolder<TCalls>;
     public final object:TType;
-    public final calls:TCalls;
 
-    public function new(object:TType, calls:TCalls) {
+    public var calls(get, never):TCalls;
+    function get_calls() {
+        return callsHolder.calls;
+    }
+
+    public function new(object:TType, callsHolder:ExMockCallsHolder<TCalls>) {
         this.object = object;
-        this.calls = calls;
+        this.callsHolder = callsHolder;
+    }
+
+    public function reset():Void {
+        callsHolder.reset();
+    }
+}
+
+class ExMockCallsHolder<TCalls> {
+    final factory:()->TCalls;
+    public var calls(default, null):TCalls;
+
+    public function new(factory:()->TCalls) {
+        this.factory = factory;
+        reset();
+    }
+
+    public function reset():Void {
+        calls = factory();
     }
 }
 
