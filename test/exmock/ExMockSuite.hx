@@ -4,6 +4,7 @@ import testdata.Interface1;
 import testdata.Interface2;
 import testdata.Interface3;
 import testdata.Interface4;
+import testdata.Interface5;
 
 class ExMockSuite extends BuddySuite {
     public function new() {
@@ -134,6 +135,12 @@ class ExMockSuite extends BuddySuite {
 
                 // プロパティ
                 // 型パラメータ付き
+
+                it("type parameter", {
+                    final mock = ExMock.mock(Interface5).setup({
+
+                    });
+                });
             });
 
             // 構造体

@@ -5,6 +5,7 @@ import haxe.macro.ExprTools;
 import haxe.macro.Type;
 import haxe.macro.Context;
 import haxe.macro.Expr;
+import extools.EqualsTools;
 
 using haxe.macro.TypeTools;
 using StringTools;
@@ -93,7 +94,6 @@ class ExMock {
                         expr: EField(macro __body, f.name),
                         pos: Context.currentPos()
                     };
-
                     final eargs = {
                         expr: EObjectDecl(args.map(a ->
                             ({field: a.name, expr: {expr: EConst(CIdent(a.name)), pos: Context.currentPos()}} : ObjectField)
@@ -116,6 +116,12 @@ class ExMock {
                                 type: a.t.toComplexType()
                             } : FunctionArg)),
                             ret: ret.toComplexType(),
+                            params: f.params.map(p -> ({
+                                name: p.name,
+                                // ?constraints:Array<ComplexType>;
+                                // ?params:Array<TypeParamDecl>;
+                                // ?meta:Metadata;
+                            } : TypeParamDecl)),
                             expr: macro {
                                 ${{expr: EField(macro __calls, f.name), pos: Context.currentPos()}}.push(${eargs});
                                 return if (__body != null && ${ebody} != null) {
@@ -223,18 +229,27 @@ class ExMock {
             })
             .map(f -> ({
                 name: f.name,
-                kind: FVar(switch (f.type) {
+                kind: switch (f.type) {
                     case TFun(args, ret):
-                        TFunction(
-                            args.map(a -> {
-                                final arg = TNamed(a.name, a.t.toComplexType());
-                                a.opt ? TOptional(arg) : arg;
-                            }),
-                            ret.toComplexType()
-                        );
+                        FFun({
+                            args: args.map(a -> ({
+                                name: a.name,
+                                opt: a.opt,
+                                type: a.t.toComplexType()
+                            } : FunctionArg)),
+                            ret: ret.toComplexType(),
+                            expr: null,
+                            params: f.params.map(p -> ({
+                                name: p.name,
+                                // constraints: null
+                                // ?constraints:Array<ComplexType>;
+                                // ?params:Array<TypeParamDecl>;
+                                // ?meta:Metadata;
+                            } : TypeParamDecl))
+                        });
                     case _:
-                        f.type.toComplexType();
-                }),
+                        FVar(f.type.toComplexType());
+                },
                 meta: [{name: ":optional", pos: Context.currentPos()}],
                 pos: Context.currentPos()
             } : Field))
@@ -259,23 +274,32 @@ class ExMock {
 
     static function makeMockCallsType(fields:Array<ClassField>, missingAccessors:Array<Accessor>):ComplexType {
         return TAnonymous(
-            fields.map(f -> ({
-                name: f.name,
-                access: [AFinal],
-                kind: FVar(switch (f.type) {
-                    case TFun(args, ret):
-                        final fields = args.map(a -> ({
-                            name: a.name,
-                            kind: FVar(a.t.toComplexType()),
-                            access: [AFinal],
-                            pos: Context.currentPos()
-                        } : Field));
-                        TPath({pack: [], name: "Array", params: [TPType(TAnonymous(fields))]});
-                    case _:
-                        Context.error("invalid expr", f.pos);
-                }),
-                pos: Context.currentPos()
-            } : Field))
+            fields.map(f -> {
+                final typeParams = f.params.map(p -> p.t.toComplexType());
+                ({
+                    name: f.name,
+                    access: [AFinal],
+                    kind: FVar(switch (f.type) {
+                        case TFun(args, ret):
+                            final fields = args.map(a -> ({
+                                name: a.name,
+                                //function fn<T>(x:T):Void の`x:T`ような、Mock生成時では特定不能な型はDynamicにするしかない
+                                //TODO function fn<Map<T>>(x:Map<T>):Void;のような定義のインスタンスメソッドに対応できていない
+                                kind: if (typeParams.exists(tp -> EqualsTools.deepEqual(tp, a.t.toComplexType()))) {
+                                    FVar(macro :Dynamic);
+                                } else {
+                                    FVar(a.t.toComplexType());
+                                },
+                                access: [AFinal],
+                                pos: Context.currentPos()
+                            } : Field));
+                            TPath({pack: [], name: "Array", params: [TPType(TAnonymous(fields))]});
+                        case _:
+                            Context.error("invalid expr", f.pos);
+                    }),
+                    pos: Context.currentPos(),
+                } : Field);
+            })
         );
     }
 

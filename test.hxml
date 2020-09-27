@@ -2,6 +2,7 @@
 -p test
 -L buddy
 -L hxnodejs
+-L extools
 -m Main
 --js bin/main.js
 --dce no
